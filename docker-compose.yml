@@ -1,0 +1,109 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: clickandbuy_rabbitmq
+    ports:
+      - 15672:15672 # Оставляем только админку RabbitMQ для удобства
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+
+  player-db:
+    image: postgres:15-alpine
+    container_name: clickandbuy_player_db
+    environment:
+      POSTGRES_USER: player_user
+      POSTGRES_PASSWORD: player_password
+      POSTGRES_DB: playerdb
+    volumes:
+      - ./data/player_db:/var/lib/postgresql/data
+
+  store-db:
+    image: postgres:15-alpine
+    container_name: clickandbuy_store_db
+    environment:
+      POSTGRES_USER: store_user
+      POSTGRES_PASSWORD: store_password
+      POSTGRES_DB: storedb
+    volumes:
+      - ./data/store_db:/var/lib/postgresql/data
+
+  click-service:
+    image: clickandbuy-click-service
+    build:
+      context: .
+      dockerfile: ClickService/Dockerfile
+    container_name: clickandbuy_click_service
+    restart: on-failure
+    environment:
+      - RabbitMQ__Host=rabbitmq
+    depends_on:
+      - rabbitmq
+
+  player-service:
+    image: clickandbuy-player-service
+    build:
+      context: .
+      dockerfile: PlayerService/Dockerfile
+    container_name: clickandbuy_player_service
+    restart: on-failure
+    environment:
+      - RabbitMQ__Host=rabbitmq
+      - ConnectionStrings__DefaultConnection=Host=player-db;Port=5432;Database=playerdb;Username=player_user;Password=player_password
+      - Admin__Username=admin
+      - Admin__Password=superadmin_password123
+    depends_on:
+      - rabbitmq
+      - player-db
+
+  store-service:
+    image: clickandbuy-store-service
+    build:
+      context: .
+      dockerfile: StoreService/Dockerfile
+    container_name: clickandbuy_store_service
+    restart: on-failure
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=store-db;Port=5432;Database=storedb;Username=store_user;Password=store_password
+      - PlayerService__Url=http://player-service:8080
+    depends_on:
+      - store-db
+      - player-service
+
+  admin-service:
+    image: clickandbuy-admin-service
+    build:
+      context: .
+      dockerfile: AdminService/Dockerfile
+    container_name: clickandbuy_admin_service
+    environment:
+      - PlayerService__Url=http://player-service:8080
+    depends_on:
+      - player-service
+
+  admin-frontend:
+    image: clickandbuy-admin-frontend
+    build:
+      context: .
+      dockerfile: AdminFrontend/Dockerfile
+    container_name: clickandbuy_admin_frontend
+    ports:
+      - 8081:80
+    depends_on:
+      - admin-service
+      - player-service
+
+  frontend:
+    image: clickandbuy-frontend
+    build:
+      context: .
+      dockerfile: Frontend/Dockerfile
+    container_name: clickandbuy_frontend
+    ports:
+      - 8080:80
+    depends_on:
+      - click-service
+      - player-service
+      - store-service

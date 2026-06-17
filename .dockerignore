@@ -1,0 +1,9 @@
+**/.git/
+**/bin/
+**/obj/
+.vs/
+data/
+docker_volumes/
+.vscode/
+publish_test/
+admin_publish_test/

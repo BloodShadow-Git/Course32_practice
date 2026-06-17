@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="AdminFrontend/AdminFrontend.csproj" />
+  <Project Path="AdminService/AdminService.csproj" />
+  <Project Path="ClickService/ClickService.csproj" />
+  <Project Path="Frontend/Frontend.csproj" />
+  <Project Path="IntegrationTests/IntegrationTests.csproj" />
+  <Project Path="PlayerService/PlayerService.csproj" />
+  <Project Path="SharedLibrary/SharedLibrary.csproj" />
+  <Project Path="StoreService/StoreService.csproj" />
+</Solution>
